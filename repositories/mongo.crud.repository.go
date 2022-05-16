@@ -2,14 +2,13 @@ package repositories
 
 import (
 	"context"
-	"duolacloud.com/duolacloud/crud-core/repositories"
 	"duolacloud.com/duolacloud/crud-core/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type mongoCrudRepository[DTO any, CreateDTO any, UpdateDTO any] struct {
+type MongoCrudRepository[DTO any, CreateDTO any, UpdateDTO any] struct {
 	db *mongo.Database
 	collection string
 }
@@ -17,14 +16,14 @@ type mongoCrudRepository[DTO any, CreateDTO any, UpdateDTO any] struct {
 func NewMongoCrudRepository[DTO any, CreateDTO any, UpdateDTO any](
 	db *mongo.Database,
 	collection string,
-) repositories.CrudRepository[DTO, CreateDTO, UpdateDTO] {
-	return &mongoCrudRepository[DTO, CreateDTO, UpdateDTO]{
+) *MongoCrudRepository[DTO, CreateDTO, UpdateDTO] {
+	return &MongoCrudRepository[DTO, CreateDTO, UpdateDTO]{
 		db: db,
 		collection: collection,
 	}
 }
 
-func (r *mongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Create(c context.Context, createDTO *CreateDTO, opts ...types.CreateOption) (*DTO, error) {
+func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Create(c context.Context, createDTO *CreateDTO, opts ...types.CreateOption) (*DTO, error) {
 	_, err := r.db.Collection(r.collection).InsertOne(c, createDTO)
 	if err != nil {
 		return nil, err
@@ -33,12 +32,12 @@ func (r *mongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Create(c context.Contex
 	return nil, nil
 }
 
-func (r *mongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Delete(c context.Context, id types.ID) error {
+func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Delete(c context.Context, id types.ID) error {
 	_, err := r.db.Collection(r.collection).DeleteOne(c, bson.M{"_id": id})
 	return err
 }
 
-func (r *mongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Update(c context.Context, id types.ID, updateDTO *UpdateDTO, opts ...types.UpdateOption) (*DTO, error) {
+func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Update(c context.Context, id types.ID, updateDTO *UpdateDTO, opts ...types.UpdateOption) (*DTO, error) {
 	var dto *DTO
 
 	var _opts types.UpdateOptions
@@ -72,7 +71,7 @@ func (r *mongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Update(c context.Contex
 	return nil, nil
 }
 
-func (r *mongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Get(c context.Context, id types.ID) (*DTO, error) {
+func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Get(c context.Context, id types.ID) (*DTO, error) {
 	var dto *DTO
 
 	filter := bson.D{{"_id", id}}
@@ -85,11 +84,11 @@ func (r *mongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Get(c context.Context, 
 	return dto, nil
 }
 
-func (r *mongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Query(c context.Context, query *types.PageQuery[DTO]) ([]*DTO, error) {
+func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Query(c context.Context, query *types.PageQuery[DTO]) ([]*DTO, error) {
 	return nil, nil
 }
 
-func (r *mongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Count(c context.Context, query *types.PageQuery[DTO]) (int64, error) {
+func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Count(c context.Context, query *types.PageQuery[DTO]) (int64, error) {
 	filter := bson.D{{}}
 
 	count, err := r.db.Collection(r.collection).CountDocuments(c, filter)
