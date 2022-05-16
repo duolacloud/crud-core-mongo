@@ -5,6 +5,7 @@ import (
 	"testing"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"duolacloud.com/duolacloud/crud-core/types"
 )
 
 type UserEntity struct {
@@ -59,7 +60,11 @@ func TestMongoCrudRepository(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Logf("修改后: %v", u)
 
-
-	t.Logf("haha: %v", u)
+	count, err := s.Count(context.TODO(), &types.PageQuery[UserEntity]{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("记录总数: %v", count)
 }

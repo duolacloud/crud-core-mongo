@@ -24,7 +24,7 @@ func NewMongoCrudRepository[DTO any, CreateDTO any, UpdateDTO any](
 	}
 }
 
-func (r *mongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Create(c context.Context, createDTO *CreateDTO) (*DTO, error) {
+func (r *mongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Create(c context.Context, createDTO *CreateDTO, opts ...types.CreateOption) (*DTO, error) {
 	_, err := r.db.Collection(r.collection).InsertOne(c, createDTO)
 	if err != nil {
 		return nil, err
@@ -87,4 +87,11 @@ func (r *mongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Get(c context.Context, 
 
 func (r *mongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Query(c context.Context, query *types.PageQuery[DTO]) ([]*DTO, error) {
 	return nil, nil
+}
+
+func (r *mongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Count(c context.Context, query *types.PageQuery[DTO]) (int64, error) {
+	filter := bson.D{{}}
+
+	count, err := r.db.Collection(r.collection).CountDocuments(c, filter)
+	return count, err
 }
