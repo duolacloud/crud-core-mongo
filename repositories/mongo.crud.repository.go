@@ -85,7 +85,32 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Get(c context.Context, 
 }
 
 func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Query(c context.Context, query *types.PageQuery[DTO]) ([]*DTO, error) {
-	return nil, nil
+	skip := (query.Page-1) * int64(query.Limit)
+
+	opts := options.FindOptions{
+		Skip: &skip,
+		Limit: &query.Limit,
+	}
+
+	// TODO 通过 query 转换
+	filter := bson.M{}
+
+	// TODO 转换 sort
+	opts.SetSort(query.Sort)
+
+	cursor, err := r.db.Collection(r.collection).Find(c, filter, &opts)
+	if err != nil {
+		return nil, err
+	}
+
+	var dtos []*DTO
+
+	err = cursor.All(c, &dtos)
+	if err != nil {
+		return nil, err
+	}
+
+	return dtos, nil
 }
 
 func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Count(c context.Context, query *types.PageQuery[DTO]) (int64, error) {
