@@ -113,7 +113,15 @@ func (b *FilterQueryBuilder[Entity]) BuildQuery(query *types.PageQuery[Entity]) 
 		Sort: sort,
 	}
 
-	fmt.Printf("filterQuery: %v\n", filterQuery)
+	prj, err := b.buildProjections(query.Fields)
+	if err != nil {
+		return nil, err
+	}
+	if len(prj) > 0 {
+		opts.SetProjection(prj)
+	}
+
+	fmt.Printf("filterQuery: %v, %v\n", filterQuery, prj)
 
 	return &MongoQuery[Entity]{
 		FilterQuery: filterQuery,
@@ -127,6 +135,40 @@ func (b *FilterQueryBuilder[Entity]) buildFilterQuery(filter map[string]interfac
 	}
 
 	return b.whereBuilder.build(filter)
+}
+
+func (b *FilterQueryBuilder[Entity]) buildProjections(fields []string) (map[string]int, error) {
+	prj := map[string]int{}
+	// set field projections option
+	if len(fields) > 0 {
+		for _, field := range fields {
+			val := 1
+
+			// handle when the first char is a - (don't display field in result)
+			if field[0:1] == "-" {
+				field = field[1:]
+				val = 0
+			}
+
+			// handle scenarios where the first char is a + (redundant)
+			if field[0:1] == "+" {
+				field = field[1:]
+			}
+
+			// lookup field in the fieldTypes dictionary if strictValidation is true
+			if b.strictValidation {
+				if _, ok := b.fieldTypes[field]; !ok {
+					// we have a problem
+					return nil, fmt.Errorf("field %s does not exist in collection", field)
+				}
+			}
+
+			// add the field to the project dictionary
+			prj[field] = val
+		}
+	}
+
+	return prj, nil
 }
 
 func (b *FilterQueryBuilder[Entity]) buildSorting(fields []string) (map[string]int, error) {

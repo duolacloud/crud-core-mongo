@@ -99,6 +99,10 @@ func TestMongoCrudRepository(t *testing.T) {
 	t.Logf("修改后: %v", u)
 
 	query := &types.PageQuery[UserEntity]{
+		Fields: []string{
+			"name",
+			"_id",
+		},
 		Filter: map[string]interface{}{
 			"age": map[string]interface{}{
 				"between": map[string]interface{}{
