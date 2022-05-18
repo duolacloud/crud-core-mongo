@@ -7,6 +7,7 @@ import(
 	"fmt"
 	"strconv"
 	"duolacloud.com/duolacloud/crud-core/types"
+	"duolacloud.com/duolacloud/crud-core-mongo/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -57,6 +58,14 @@ func (b *ComparisonBuilder[Entity]) build(
 
 	normalizedCmp := strings.ToLower(string(cmp));
 	var querySelector bson.M
+
+	// TODO 根据 cmp 判断 val 类型
+	switch normalizedCmp {
+	case "in":
+		if !utils.IsArray(val) {
+			return nil, errors.New("Invalid value, value for in must be array")
+		}
+	}
 
 	if cmp, ok := b.comparisonMap[normalizedCmp]; ok {
 		// comparison operator (e.b. =, !=, >, <)

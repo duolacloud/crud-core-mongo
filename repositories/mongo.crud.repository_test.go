@@ -106,6 +106,12 @@ func TestMongoCrudRepository(t *testing.T) {
 					"upper": 20,
 				},
 			},
+			"name": map[string]interface{}{
+				"in": []interface{}{
+					"李四",
+					"哈哈",
+				},
+			}, 
 			"birthday": map[string]interface{}{
 				"gt": "1987-02-02T12:00:01Z",
 			},
