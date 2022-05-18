@@ -7,6 +7,7 @@ import(
 	"fmt"
 	"strconv"
 	"duolacloud.com/duolacloud/crud-core/types"
+	mongo_schema "duolacloud.com/duolacloud/crud-core-mongo/schema"
 	"duolacloud.com/duolacloud/crud-core-mongo/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -28,12 +29,12 @@ var DEFAULT_COMPARISON_MAP = map[string]string{
 
 type ComparisonBuilder [Entity any] struct {
 	comparisonMap map[string]string
-	fieldTypes map[string]string
+	schema *mongo_schema.Schema
 }
 
 func NewComparisonBuilder[Entity any](
 	comparisonMap map[string]string,
-	fieldTypes map[string]string,
+	schema *mongo_schema.Schema,
 ) *ComparisonBuilder[Entity] {
 	var _comparisonMap map[string]string
 	if comparisonMap != nil {
@@ -44,7 +45,7 @@ func NewComparisonBuilder[Entity any](
 
 	return &ComparisonBuilder[Entity]{
 		comparisonMap: _comparisonMap,
-		fieldTypes: fieldTypes,
+		schema: schema,
 	}
 }
 
@@ -194,7 +195,7 @@ func (b *ComparisonBuilder[Entity]) convertQueryValue(field string, val interfac
 		return b.convertToObjectId(val)
 	}
 
-	bsonType, ok := b.fieldTypes[field]
+	bsonType, ok := b.schema.FieldTypes[field]
 	if ok {
 		switch bsonType {
 		case "string":

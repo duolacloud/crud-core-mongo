@@ -3,6 +3,7 @@ package query
 import(
 	"fmt"
 	"duolacloud.com/duolacloud/crud-core/types"
+	mongo_schema "duolacloud.com/duolacloud/crud-core-mongo/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -15,85 +16,22 @@ type MongoQuery [Entity any] struct {
 
 type FilterQueryBuilder[Entity any] struct {
 	whereBuilder *WhereBuilder[Entity]
+	schema *mongo_schema.Schema
 	strictValidation bool
-	fieldTypes map[string]string
 }
 
 func NewFilterQueryBuilder[Entity any](
-	schema bson.M,
+	schema *mongo_schema.Schema,
 	strictValidation bool,
 ) *FilterQueryBuilder[Entity] {
 	b := &FilterQueryBuilder[Entity]{
 		strictValidation: strictValidation,
+		schema: schema,
 	}
 
-	if schema != nil {
-		b.discoverFields(schema)
-	}
-
-	b.whereBuilder = NewWhereBuilder[Entity](b.fieldTypes)
+	b.whereBuilder = NewWhereBuilder[Entity](schema)
 
 	return b
-}
-
-func (b *FilterQueryBuilder[Entity]) discoverFields(schema bson.M) {
-	if b.fieldTypes == nil {
-		b.fieldTypes = map[string]string{}
-	}
-
-	// check top level is $jsonSchema
-	if js, ok := schema["$jsonSchema"]; ok {
-		schema = js.(bson.M)
-	}
-
-	// bsonType, required, properties at top level
-	// looking for properties field, specifically
-	if properties, ok := schema["properties"]; ok {
-		properties := properties.(bson.M)
-		b.iterateProperties("", properties)
-	}
-}
-
-func (b *FilterQueryBuilder[Entity]) iterateProperties(parentPrefix string, properties bson.M) {
-	// iterate each field within properties
-	for field, value := range properties {
-		switch value := value.(type) {
-		case bson.M:
-			// retrieve the type of the field
-			if bsonType, ok := value["bsonType"]; ok {
-				bsonType := bsonType.(string)
-				// capture type in the fieldTypes map
-				if bsonType != "" {
-					b.fieldTypes[fmt.Sprintf("%s%s", parentPrefix, field)] = bsonType
-				}
-
-				if bsonType == "array" {
-					// look at "items"
-					if items, ok := value["items"]; ok {
-						value = items.(bson.M)
-					}
-				}
-
-				if subProperties, ok := value["properties"]; ok {
-					subProperties := subProperties.(bson.M)
-					b.iterateProperties(
-						fmt.Sprintf("%s%s.", parentPrefix, field),
-						subProperties,
-					)
-				}
-
-				continue
-			}
-
-			// check for enum (without bsonType specified)
-			if _, ok := value["enum"]; ok {
-				b.fieldTypes[fmt.Sprintf("%s%s", parentPrefix, field)] = "object"
-			}
-		default:
-			// unknown type
-			continue
-		}
-	}
 }
 
 func (b *FilterQueryBuilder[Entity]) BuildQuery(query *types.PageQuery) (*MongoQuery[Entity], error) {
@@ -181,7 +119,7 @@ func (b *FilterQueryBuilder[Entity]) buildProjections(fields []string) (map[stri
 
 			// lookup field in the fieldTypes dictionary if strictValidation is true
 			if b.strictValidation {
-				if _, ok := b.fieldTypes[field]; !ok {
+				if _, ok := b.schema.FieldTypes[field]; !ok {
 					// we have a problem
 					return nil, fmt.Errorf("field %s does not exist in collection", field)
 				}
@@ -212,7 +150,7 @@ func (b *FilterQueryBuilder[Entity]) buildSorting(fields []string) (map[string]i
 
 			// lookup field in the fieldTypes dictionary if strictValidation is true
 			if b.strictValidation {
-				if _, ok := b.fieldTypes[field]; !ok {
+				if _, ok := b.schema.FieldTypes[field]; !ok {
 					// we have a problem
 					return nil, fmt.Errorf("field %s does not exist in collection", field)
 				}

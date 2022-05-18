@@ -3,17 +3,16 @@ package query
 import(
 	"go.mongodb.org/mongo-driver/bson"
 	"duolacloud.com/duolacloud/crud-core/types"
+	mongo_schema "duolacloud.com/duolacloud/crud-core-mongo/schema"
 )
 
 type WhereBuilder [Entity any] struct {
 	comparisonBuilder *ComparisonBuilder[Entity]
-	fieldTypes map[string]string
 }
 
-func NewWhereBuilder[Entity any](fieldTypes map[string]string) *WhereBuilder[Entity] {
+func NewWhereBuilder[Entity any](schema *mongo_schema.Schema) *WhereBuilder[Entity] {
 	return &WhereBuilder[Entity]{
-		comparisonBuilder: NewComparisonBuilder[Entity](DEFAULT_COMPARISON_MAP, fieldTypes),
-		fieldTypes: fieldTypes,
+		comparisonBuilder: NewComparisonBuilder[Entity](DEFAULT_COMPARISON_MAP, schema),
 	}
 }
 

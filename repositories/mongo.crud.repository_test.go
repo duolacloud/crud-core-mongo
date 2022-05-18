@@ -62,7 +62,7 @@ func TestMongoCrudRepository(t *testing.T) {
 	t.Log("connect mongo success")
 	db := client.Database("test")
 
-	s := NewMongoCrudRepository[UserEntity, UserEntity, UserEntity](db, "users", userSchema)
+	s := NewMongoCrudRepository[UserEntity, UserEntity, UserEntity](db, "users", userSchema, WithStrictValidation(true))
 
 	err = s.Delete(context.TODO(), "1")
 	if err != nil {
