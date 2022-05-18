@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"duolacloud.com/duolacloud/crud-core/types"
+	"duolacloud.com/duolacloud/crud-core-mongo/query"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -11,15 +12,18 @@ import (
 type MongoCrudRepository[DTO any, CreateDTO any, UpdateDTO any] struct {
 	db *mongo.Database
 	collection string
+	schema bson.M
 }
 
 func NewMongoCrudRepository[DTO any, CreateDTO any, UpdateDTO any](
 	db *mongo.Database,
 	collection string,
+	schema bson.M,
 ) *MongoCrudRepository[DTO, CreateDTO, UpdateDTO] {
 	return &MongoCrudRepository[DTO, CreateDTO, UpdateDTO]{
 		db: db,
 		collection: collection,
+		schema: schema,
 	}
 }
 
@@ -84,21 +88,15 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Get(c context.Context, 
 	return dto, nil
 }
 
-func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Query(c context.Context, query *types.PageQuery[DTO]) ([]*DTO, error) {
-	skip := (query.Page-1) * int64(query.Limit)
+func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Query(c context.Context, q *types.PageQuery[DTO]) ([]*DTO, error) {
+	filterQueryBuilder := query.NewFilterQueryBuilder[DTO](r.schema, true)
 
-	opts := options.FindOptions{
-		Skip: &skip,
-		Limit: &query.Limit,
+	mq, err := filterQueryBuilder.BuildQuery(q);
+	if err != nil {
+		return nil, err
 	}
 
-	// TODO 通过 query 转换
-	filter := bson.M{}
-
-	// TODO 转换 sort
-	opts.SetSort(query.Sort)
-
-	cursor, err := r.db.Collection(r.collection).Find(c, filter, &opts)
+	cursor, err := r.db.Collection(r.collection).Find(c, mq.FilterQuery, mq.Options)
 	if err != nil {
 		return nil, err
 	}
@@ -113,9 +111,14 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Query(c context.Context
 	return dtos, nil
 }
 
-func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Count(c context.Context, query *types.PageQuery[DTO]) (int64, error) {
-	filter := bson.D{{}}
+func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Count(c context.Context, q *types.PageQuery[DTO]) (int64, error) {
+	filterQueryBuilder := query.NewFilterQueryBuilder[DTO](r.schema, true)
 
-	count, err := r.db.Collection(r.collection).CountDocuments(c, filter)
+	mq, err := filterQueryBuilder.BuildQuery(q);
+	if err != nil {
+		return 0, err
+	}
+
+	count, err := r.db.Collection(r.collection).CountDocuments(c, mq.FilterQuery)
 	return count, err
 }
