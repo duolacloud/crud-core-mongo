@@ -98,7 +98,7 @@ func TestMongoCrudRepository(t *testing.T) {
 	}
 	t.Logf("修改后: %v", u)
 
-	query := &types.PageQuery[UserEntity]{
+	query := &types.PageQuery{
 		Fields: []string{
 			"name",
 			"_id",
@@ -107,18 +107,22 @@ func TestMongoCrudRepository(t *testing.T) {
 			"age": map[string]interface{}{
 				"between": map[string]interface{}{
 					"lower": 18,
-					"upper": 20,
+					"upper": 24,
 				},
 			},
-			"name": map[string]interface{}{
+			/*"name": map[string]interface{}{
 				"in": []interface{}{
 					"李四",
 					"哈哈",
 				},
-			}, 
+			},*/ 
 			"birthday": map[string]interface{}{
 				"gt": "1987-02-02T12:00:01Z",
 			},
+		},
+		Page: map[string]int{
+			"limit": 1,
+			"offset": 0,
 		},
 	}
 
@@ -126,7 +130,7 @@ func TestMongoCrudRepository(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	
 	for _, i := range us {
 		t.Logf("记录: %v", i)
 	}

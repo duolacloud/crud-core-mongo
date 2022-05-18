@@ -88,7 +88,7 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Get(c context.Context, 
 	return dto, nil
 }
 
-func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Query(c context.Context, q *types.PageQuery[DTO]) ([]*DTO, error) {
+func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Query(c context.Context, q *types.PageQuery) ([]*DTO, error) {
 	filterQueryBuilder := query.NewFilterQueryBuilder[DTO](r.schema, true)
 
 	mq, err := filterQueryBuilder.BuildQuery(q);
@@ -111,7 +111,7 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Query(c context.Context
 	return dtos, nil
 }
 
-func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Count(c context.Context, q *types.PageQuery[DTO]) (int64, error) {
+func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Count(c context.Context, q *types.PageQuery) (int64, error) {
 	filterQueryBuilder := query.NewFilterQueryBuilder[DTO](r.schema, true)
 
 	mq, err := filterQueryBuilder.BuildQuery(q);

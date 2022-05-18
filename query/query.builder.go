@@ -96,7 +96,7 @@ func (b *FilterQueryBuilder[Entity]) iterateProperties(parentPrefix string, prop
 	}
 }
 
-func (b *FilterQueryBuilder[Entity]) BuildQuery(query *types.PageQuery[Entity]) (*MongoQuery[Entity], error) {
+func (b *FilterQueryBuilder[Entity]) BuildQuery(query *types.PageQuery) (*MongoQuery[Entity], error) {
 	filterQuery, err := b.buildFilterQuery(query.Filter)
 	if err != nil {
 		return nil, err
@@ -108,10 +108,9 @@ func (b *FilterQueryBuilder[Entity]) BuildQuery(query *types.PageQuery[Entity]) 
 	}
 
 	opts := &options.FindOptions{
-		Skip: &query.Offset,
-		Limit: &query.Limit,
 		Sort: sort,
 	}
+	b.setPaginationOptions(query.Page, opts)
 
 	prj, err := b.buildProjections(query.Fields)
 	if err != nil {
@@ -121,12 +120,37 @@ func (b *FilterQueryBuilder[Entity]) BuildQuery(query *types.PageQuery[Entity]) 
 		opts.SetProjection(prj)
 	}
 
-	fmt.Printf("filterQuery: %v, %v\n", filterQuery, prj)
-
 	return &MongoQuery[Entity]{
 		FilterQuery: filterQuery,
 		Options: opts,
 	}, nil
+}
+
+func (b *FilterQueryBuilder[Entity]) setPaginationOptions(pagination map[string]int, opts *options.FindOptions) {
+	// check for limit
+	if limit, ok := pagination["limit"]; ok {
+		opts.SetLimit(int64(limit))
+
+		// check for offset (once limit is set)
+		if offset, ok := pagination["offset"]; ok {
+			opts.SetSkip(int64(offset))
+		}
+
+		// check for skip (once limit is set)
+		if skip, ok := pagination["skip"]; ok {
+			opts.SetSkip(int64(skip))
+		}
+	}
+
+	// check for page and size
+	if size, ok := pagination["size"]; ok {
+		opts.SetLimit(int64(size))
+
+		// set skip (requires understanding of size)
+		if page, ok := pagination["page"]; ok {
+			opts.SetSkip(int64(page * size))
+		}
+	}
 }
 
 func (b *FilterQueryBuilder[Entity]) buildFilterQuery(filter map[string]interface{}) (bson.M, error) {
