@@ -8,14 +8,19 @@ import(
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type MongoQuery [Entity any] struct {
+type MongoQuery struct {
 	FilterQuery bson.M
 	Options *options.FindOptions
 }
 
+type MongoAggregateQuery struct {
+	MongoQuery
+	Aggregate bson.M
+}
 
 type FilterQueryBuilder[Entity any] struct {
 	whereBuilder *WhereBuilder[Entity]
+	aggregateBuilder *AggregateBuilder
 	schema *mongo_schema.Schema
 	strictValidation bool
 }
@@ -30,11 +35,12 @@ func NewFilterQueryBuilder[Entity any](
 	}
 
 	b.whereBuilder = NewWhereBuilder[Entity](schema)
+	b.aggregateBuilder = NewAggregateBuilder()
 
 	return b
 }
 
-func (b *FilterQueryBuilder[Entity]) BuildQuery(query *types.PageQuery) (*MongoQuery[Entity], error) {
+func (b *FilterQueryBuilder[Entity]) BuildQuery(query *types.PageQuery) (*MongoQuery, error) {
 	filterQuery, err := b.buildFilterQuery(query.Filter)
 	if err != nil {
 		return nil, err
@@ -58,10 +64,57 @@ func (b *FilterQueryBuilder[Entity]) BuildQuery(query *types.PageQuery) (*MongoQ
 		opts.SetProjection(prj)
 	}
 
-	return &MongoQuery[Entity]{
+	return &MongoQuery{
 		FilterQuery: filterQuery,
 		Options: opts,
 	}, nil
+}
+
+func (b *FilterQueryBuilder[Entity]) BuildAggregateQuery(aggregate *types.AggregateQuery, filter map[string]interface{}) (*MongoAggregateQuery, error) {
+	filterQuery, err := b.buildFilterQuery(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	aggr, err := b.aggregateBuilder.build(aggregate)
+	if err != nil {
+		return nil, err
+	}
+
+	opts := &options.FindOptions{}
+
+	sort, err := b.buildAggregateSorting(aggregate)
+	if err != nil {
+		return nil, err
+	}
+
+	if sort != nil {
+		opts.Sort = sort
+	}
+
+
+	return &MongoAggregateQuery{
+		MongoQuery: MongoQuery{
+			FilterQuery: filterQuery,
+			Options: opts,
+		},
+		Aggregate: aggr,
+	}, nil
+}
+
+func (b *FilterQueryBuilder[Entity]) buildAggregateSorting(aggregate *types.AggregateQuery) (map[string]int, error) {
+	aggregateGroupBy := b.aggregateBuilder.getGroupBySelects(aggregate.GroupBy)
+	if aggregateGroupBy == nil {
+		return nil, nil
+	}
+
+	var sort = make(map[string]int)
+
+	for _, field := range aggregateGroupBy {
+		sort[field] = 1
+	}
+
+	return sort, nil
 }
 
 func (b *FilterQueryBuilder[Entity]) setPaginationOptions(pagination map[string]int, opts *options.FindOptions) {

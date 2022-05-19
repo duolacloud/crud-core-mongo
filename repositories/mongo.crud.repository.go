@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"context"
 	"duolacloud.com/duolacloud/crud-core/types"
 	"duolacloud.com/duolacloud/crud-core-mongo/query"
@@ -144,4 +145,43 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Count(c context.Context
 
 	count, err := r.DB.Collection(r.Collection).CountDocuments(c, mq.FilterQuery)
 	return count, err
+}
+
+func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Aggregate(
+	c context.Context,
+	filter map[string]interface{},
+	aggregateQuery *types.AggregateQuery,
+) ([]*types.AggregateResponse, error) {
+	filterQueryBuilder := query.NewFilterQueryBuilder[DTO](r.Schema, r.Options.StrictValidation)
+
+	mq, err := filterQueryBuilder.BuildAggregateQuery(aggregateQuery, filter)
+	if err != nil {
+		return nil, err
+	}
+	
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: mq.FilterQuery}},
+		{{Key: "$group", Value: mq.Aggregate}},
+	}
+
+	fmt.Printf("xaggregate: %v\n", mq.Aggregate)
+
+	if mq.MongoQuery.Options.Sort != nil {
+		pipeline = append(pipeline, bson.D{{Key: "$sort", Value: mq.MongoQuery.Options.Sort}})
+	}
+
+	cursor, err := r.DB.Collection(r.Collection).Aggregate(c, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	
+	var result []bson.M
+	err = cursor.All(c, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("r: %v\n", result)
+
+	return query.ConvertToAggregateResponse(result)
 }

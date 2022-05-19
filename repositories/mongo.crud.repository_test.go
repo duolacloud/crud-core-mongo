@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"encoding/json"
 	"context"
 	"testing"
 	"time"
@@ -13,6 +14,7 @@ import (
 type UserEntity struct {
 	ID string `bson:"_id"`
 	Name string `bson:"name"`
+	Country string `bson:"country"`
 	Age int64 `bson:"age"`
 	Birthday time.Time `bson:"birthday"`
 }
@@ -29,6 +31,10 @@ var userSchema = bson.M{
 			"name": bson.M{
 				"bsonType":    "string",
 				"description": "name of user",
+			},
+			"country": bson.M{
+				"bsonType":    "string",
+				"description": "country of user",
 			},
 			"age": bson.M{
 				"bsonType":    "int",
@@ -75,6 +81,7 @@ func TestMongoCrudRepository(t *testing.T) {
 	u, err := s.Create(context.TODO(), &UserEntity{
 		ID: "1",
 		Name: "张三",
+		Country: "china",
 		Age: 18,
 		Birthday: birthday,
 	})
@@ -86,6 +93,7 @@ func TestMongoCrudRepository(t *testing.T) {
 	u, err = s.Update(context.TODO(), "1", &UserEntity{
 		Name: "李四",
 		Age: 19,
+		Country: "china",
 		Birthday: birthday,
 	})
 	if err != nil {
@@ -141,4 +149,31 @@ func TestMongoCrudRepository(t *testing.T) {
 	}
 
 	t.Logf("记录总数: %v", count)
+
+	aggs, err := s.Aggregate(context.TODO(), query.Filter, &types.AggregateQuery{
+		GroupBy: []string{
+			"country",
+		},
+		Count: []string{
+			"country",
+		},
+		Max: []string{
+			"age",
+		},
+		Min: []string{
+			"age",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, agg := range aggs {
+		js, err := json.Marshal(agg)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		t.Logf("聚合: %v\n", string(js))
+	}
 }
