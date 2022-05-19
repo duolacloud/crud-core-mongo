@@ -74,7 +74,7 @@ func (b *AggregateBuilder) createAggSelect(fn AggregateFunc, fields []string) bs
 
 	for _, field := range fields {
 		aggAlias := fmt.Sprintf("%s_%s", fn, field)
-		fieldAlias := fmt.Sprintf("$%s", field) // getSchemaKey(field)
+		fieldAlias := fmt.Sprintf("$%s", getSchemaKey(field))
 		if fn == "count" {
 			agg[aggAlias] = bson.M{
 				"$sum": bson.M{
@@ -111,7 +111,7 @@ func (b *AggregateBuilder) createGroupBySelect(fields []string) bson.M {
 
 	for _, field := range fields {
 		aggAlias := b.getGroupByAlias(field)
-		fieldAlias := fmt.Sprintf("$%s", field) // `$${getSchemaKey(field)}`
+		fieldAlias := fmt.Sprintf("$%s", getSchemaKey(field))
 		m[aggAlias] = fieldAlias
 	}
 

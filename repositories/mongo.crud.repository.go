@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"fmt"
+	"bytes"
+	// "errors"
 	"context"
 	"duolacloud.com/duolacloud/crud-core/types"
 	"duolacloud.com/duolacloud/crud-core-mongo/query"
@@ -184,4 +186,102 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Aggregate(
 	fmt.Printf("r: %v\n", result)
 
 	return query.ConvertToAggregateResponse(result)
+}
+
+func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) CursorQuery(c context.Context, q *types.CursorQuery) ([]*DTO, *types.CursorExtra, error) {
+	filterQueryBuilder := query.NewFilterQueryBuilder[DTO](r.Schema, r.Options.StrictValidation)
+
+	mq, err := filterQueryBuilder.BuildCursorQuery(q)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cursor, err := r.DB.Collection(r.Collection).Find(c, mq.FilterQuery, mq.Options)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var result []*DTO
+
+	err = cursor.All(c, &result)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	extra := &types.CursorExtra{}
+
+	if len(result) == 0 {
+		return nil, extra, nil
+	}
+
+	if len(result) == int(q.Limit + 1) {
+		extra.HasNext = true
+		extra.HasPrevious = true
+
+		result = result[0:len(result)-1]
+		fmt.Printf("len(result) == q.Limit itemCount: %d, limit: %d\n", len(result), q.Limit)
+	}
+	fmt.Printf("fuck itemCount: %d\n", len(result))
+
+	toCursor := func(item *DTO) (string, error) {
+		/*
+		// 反射DTO类型
+		t := reflect.TypeOf(item)
+		if t.Kind() == reflect.Ptr {
+			t = t.Elem()
+		}*/
+
+		
+		sortFieldValues := make([]interface{}, len(q.Sort))
+		for i, sortField := range q.Sort {
+			if sortField[0:1] == "-" {
+				sortField = sortField[1:]
+			}
+	
+			if sortField[0:1] == "+" {
+				sortField = sortField[1:]
+			}
+
+			if sortField == "id" {
+				sortField = "_id"
+			}
+
+			/*
+			_, ok := r.Schema.FieldTypes[sortField]
+			if !ok {
+				return "", errors.New(fmt.Sprintf("field %s not found", sortField))
+			}
+			*/
+			var m bson.M
+			bytes, _ := bson.Marshal(item)
+			_ = bson.Unmarshal(bytes, &m)
+
+			sortFieldValues[i] = m[sortField]
+		}
+
+		cursor := &types.Cursor{
+			Value: sortFieldValues,
+		}
+
+		w := new(bytes.Buffer)
+		err = cursor.Marshal(w)
+		if err != nil {
+			return "", err
+		}
+
+		return w.String(), nil
+	}
+
+	itemCount := len(result)
+	extra.StartCursor, err = toCursor(result[0])
+	if err != nil {
+		return nil, nil, err
+	}
+
+	extra.EndCursor, err = toCursor(result[itemCount-1])
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return result, extra, nil
 }

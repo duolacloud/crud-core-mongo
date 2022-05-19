@@ -140,7 +140,7 @@ func TestMongoCrudRepository(t *testing.T) {
 	}
 	
 	for _, i := range us {
-		t.Logf("记录: %v", i)
+		t.Logf("记录: %v\n", i)
 	}
 
 	count, err := s.Count(context.TODO(), query)
@@ -148,8 +148,22 @@ func TestMongoCrudRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Logf("记录总数: %v", count)
+	t.Logf("记录总数: %v\n", count)
 
+	c, extra, err := s.CursorQuery(context.TODO(), &types.CursorQuery{
+		// Cursor: "gaF2kaEx",
+		Limit: 1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	{
+		js, _ := json.Marshal(c)
+		extraJs, _ := json.Marshal(extra)
+		t.Logf("CursorList: %v, %v\n", string(js), string(extraJs))
+	}
+	
 	aggs, err := s.Aggregate(context.TODO(), query.Filter, &types.AggregateQuery{
 		GroupBy: []string{
 			"country",
