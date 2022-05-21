@@ -20,4 +20,4 @@ require (
 	golang.org/x/text v0.3.5 // indirect
 )
 
-replace github.com/duolacloud/crud-core => ../crud-core
+// replace github.com/duolacloud/crud-core => ../crud-core
