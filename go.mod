@@ -3,7 +3,7 @@ module github.com/duolacloud/crud-core-mongo
 go 1.18
 
 require (
-	github.com/duolacloud/crud-core v0.0.0-00010101000000-000000000000 // indirect
+	github.com/duolacloud/crud-core v0.0.0-20220521145052-8e29d2f963ec // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
