@@ -4,8 +4,8 @@ import(
 	"fmt"
 	"time"
 	"errors"
-	"duolacloud.com/duolacloud/crud-core/types"
-	mongo_schema "duolacloud.com/duolacloud/crud-core-mongo/schema"
+	"github.com/duolacloud/crud-core/types"
+	mongo_schema "github.com/duolacloud/crud-core-mongo/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )

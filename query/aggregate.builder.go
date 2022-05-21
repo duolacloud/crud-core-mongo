@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"duolacloud.com/duolacloud/crud-core/types"
+	"github.com/duolacloud/crud-core/types"
 	"go.mongodb.org/mongo-driver/bson"
 )
 

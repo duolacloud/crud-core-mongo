@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/bson"
-	"duolacloud.com/duolacloud/crud-core/types"
+	"github.com/duolacloud/crud-core/types"
 )
 
 type UserEntity struct {

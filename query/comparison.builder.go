@@ -6,9 +6,9 @@ import(
 	"errors"
 	"fmt"
 	"strconv"
-	"duolacloud.com/duolacloud/crud-core/types"
-	mongo_schema "duolacloud.com/duolacloud/crud-core-mongo/schema"
-	"duolacloud.com/duolacloud/crud-core-mongo/utils"
+	"github.com/duolacloud/crud-core/types"
+	mongo_schema "github.com/duolacloud/crud-core-mongo/schema"
+	"github.com/duolacloud/crud-core-mongo/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )

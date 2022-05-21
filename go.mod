@@ -1,9 +1,9 @@
-module duolacloud.com/duolacloud/crud-core-mongo
+module github.com/duolacloud/crud-core-mongo
 
 go 1.18
 
 require (
-	duolacloud.com/duolacloud/crud-core v0.0.0-00010101000000-000000000000 // indirect
+	github.com/duolacloud/crud-core v0.0.0-00010101000000-000000000000 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
@@ -20,4 +20,4 @@ require (
 	golang.org/x/text v0.3.5 // indirect
 )
 
-replace duolacloud.com/duolacloud/crud-core => ../crud-core
+replace github.com/duolacloud/crud-core => ../crud-core

@@ -2,8 +2,8 @@ package query
 
 import(
 	"go.mongodb.org/mongo-driver/bson"
-	"duolacloud.com/duolacloud/crud-core/types"
-	mongo_schema "duolacloud.com/duolacloud/crud-core-mongo/schema"
+	"github.com/duolacloud/crud-core/types"
+	mongo_schema "github.com/duolacloud/crud-core-mongo/schema"
 )
 
 type WhereBuilder [Entity any] struct {
