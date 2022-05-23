@@ -134,6 +134,19 @@ func TestMongoCrudRepository(t *testing.T) {
 		},
 	}
 
+	{
+		u, err := s.QueryOne(context.TODO(), map[string]interface{}{
+			"name": map[string]interface{}{
+				"eq": "李四1",
+			},
+		})
+		if err != nil && err != types.ErrNotFound {
+			t.Fatal(err)
+		}
+		
+		t.Logf("queryOne: %v\n", u)
+	}
+	
 	us, err := s.Query(context.TODO(), query)
 	if err != nil {
 		t.Fatal(err)
@@ -142,6 +155,7 @@ func TestMongoCrudRepository(t *testing.T) {
 	for _, i := range us {
 		t.Logf("记录: %v\n", i)
 	}
+
 
 	count, err := s.Count(context.TODO(), query)
 	if err != nil {

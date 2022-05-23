@@ -108,6 +108,10 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Get(c context.Context, 
 
 	err := r.DB.Collection(r.Collection).FindOne(c, filter).Decode(&dto)
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, types.ErrNotFound
+		}
+
 		return nil, err
 	}
 
@@ -135,6 +139,29 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Query(c context.Context
 	}
 
 	return dtos, nil
+}
+
+func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) QueryOne(c context.Context, filter map[string]interface{}) (*DTO, error) {
+	filterQueryBuilder := query.NewFilterQueryBuilder[DTO](r.Schema, r.Options.StrictValidation)
+
+	mq, err := filterQueryBuilder.BuildQuery(&types.PageQuery{
+		Filter: filter,
+	});
+	if err != nil {
+		return nil, err
+	}
+
+	var dto *DTO
+	err = r.DB.Collection(r.Collection).FindOne(c, mq.FilterQuery).Decode(&dto)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, types.ErrNotFound
+		}
+
+		return nil, err
+	}
+
+	return dto, nil
 }
 
 func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Count(c context.Context, q *types.PageQuery) (int64, error) {
