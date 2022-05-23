@@ -37,7 +37,6 @@ func NewMongoCrudRepository[DTO any, CreateDTO any, UpdateDTO any](
 	collection string,
 	schema bson.M,
 	opts ...MongoCrudRepositoryOption,
-
 ) *MongoCrudRepository[DTO, CreateDTO, UpdateDTO] {
 	r := &MongoCrudRepository[DTO, CreateDTO, UpdateDTO]{
 		DB: db,
@@ -54,6 +53,10 @@ func NewMongoCrudRepository[DTO any, CreateDTO any, UpdateDTO any](
 }
 
 func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Create(c context.Context, createDTO *CreateDTO, opts ...types.CreateOption) (*DTO, error) {
+	if hook, ok := any(createDTO).(BeforeCreateHook); ok {
+		hook.BeforeCreate()
+	}
+
 	res, err := r.DB.Collection(r.Collection).InsertOne(c, createDTO)
 	if err != nil {
 		return nil, err
@@ -68,6 +71,10 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Delete(c context.Contex
 }
 
 func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Update(c context.Context, id types.ID, updateDTO *UpdateDTO, opts ...types.UpdateOption) (*DTO, error) {
+	if hook, ok := any(updateDTO).(BeforeUpdateHook); ok {
+		hook.BeforeUpdate()
+	}
+
 	var dto *DTO
 
 	var _opts types.UpdateOptions

@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"encoding/json"
 	"context"
 	"testing"
@@ -17,6 +18,10 @@ type UserEntity struct {
 	Country string `bson:"country"`
 	Age int64 `bson:"age"`
 	Birthday time.Time `bson:"birthday"`
+}
+
+func (u *UserEntity) BeforeCreate() {
+	fmt.Printf("UserEntity.BeforeCreate")
 }
 
 var userSchema = bson.M{
