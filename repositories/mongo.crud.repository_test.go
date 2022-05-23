@@ -90,6 +90,8 @@ func TestMongoCrudRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	t.Logf("create: %v\n", u)
+
 	u, err = s.Update(context.TODO(), "1", &UserEntity{
 		Name: "李四",
 		Age: 19,

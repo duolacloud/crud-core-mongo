@@ -54,12 +54,12 @@ func NewMongoCrudRepository[DTO any, CreateDTO any, UpdateDTO any](
 }
 
 func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Create(c context.Context, createDTO *CreateDTO, opts ...types.CreateOption) (*DTO, error) {
-	_, err := r.DB.Collection(r.Collection).InsertOne(c, createDTO)
+	res, err := r.DB.Collection(r.Collection).InsertOne(c, createDTO)
 	if err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	return r.Get(c, res.InsertedID)
 }
 
 func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Delete(c context.Context, id types.ID) error {
