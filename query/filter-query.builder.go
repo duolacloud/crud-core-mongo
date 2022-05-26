@@ -146,7 +146,7 @@ func (b *FilterQueryBuilder[Entity]) setPaginationOptions(pagination map[string]
 
 		// set skip (requires understanding of size)
 		if page, ok := pagination["page"]; ok {
-			opts.SetSkip(int64(page * size))
+			opts.SetSkip(int64((page-1) * size))
 		}
 	}
 }
@@ -318,8 +318,6 @@ func (b *FilterQueryBuilder[Entity]) ensureOrders(query *types.CursorQuery) {
 		}
 	}
 }
-
-
 
 func (b *FilterQueryBuilder[Entity]) buildCursorFilter(query *types.CursorQuery) (bson.M, error) {
 	ors := []bson.M{}
