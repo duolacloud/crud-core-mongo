@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"context"
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -79,3 +80,5 @@ func (s *Schema) iterateProperties(parentPrefix string, properties bson.M) {
 		}
 	}
 }
+
+type Collectioner func(c context.Context) string

@@ -27,20 +27,20 @@ func WithStrictValidation(v bool) MongoCrudRepositoryOption {
 
 type MongoCrudRepository[DTO any, CreateDTO any, UpdateDTO any] struct {
 	DB *mongo.Database
-	Collection string
+	Collectioner mongo_schema.Collectioner
 	Schema *mongo_schema.Schema
 	Options *MongoCrudRepositoryOptions
 }
 
 func NewMongoCrudRepository[DTO any, CreateDTO any, UpdateDTO any](
 	db *mongo.Database,
-	collection string,
+	collectioner mongo_schema.Collectioner,
 	schema bson.M,
 	opts ...MongoCrudRepositoryOption,
 ) *MongoCrudRepository[DTO, CreateDTO, UpdateDTO] {
 	r := &MongoCrudRepository[DTO, CreateDTO, UpdateDTO]{
 		DB: db,
-		Collection: collection,
+		Collectioner: collectioner,
 		Schema: mongo_schema.NewSchema(schema),
 	}
 
@@ -57,7 +57,7 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Create(c context.Contex
 		hook.BeforeCreate()
 	}
 
-	res, err := r.DB.Collection(r.Collection).InsertOne(c, createDTO)
+	res, err := r.DB.Collection(r.Collectioner(c)).InsertOne(c, createDTO)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Create(c context.Contex
 }
 
 func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Delete(c context.Context, id types.ID) error {
-	_, err := r.DB.Collection(r.Collection).DeleteOne(c, bson.M{"_id": id})
+	_, err := r.DB.Collection(r.Collectioner(c)).DeleteOne(c, bson.M{"_id": id})
 	return err
 }
 
@@ -100,7 +100,7 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Update(c context.Contex
 	filter := bson.D{{"_id", id}}
 	update := bson.D{{"$set", mmap}}
 
-	err = r.DB.Collection(r.Collection).FindOneAndUpdate(c, filter, update, &mongo_opts).Decode(&dto)
+	err = r.DB.Collection(r.Collectioner(c)).FindOneAndUpdate(c, filter, update, &mongo_opts).Decode(&dto)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Get(c context.Context, 
 
 	filter := bson.D{{"_id", id}}
 
-	err := r.DB.Collection(r.Collection).FindOne(c, filter).Decode(&dto)
+	err := r.DB.Collection(r.Collectioner(c)).FindOne(c, filter).Decode(&dto)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, types.ErrNotFound
@@ -133,7 +133,7 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Query(c context.Context
 		return nil, err
 	}
 
-	cursor, err := r.DB.Collection(r.Collection).Find(c, mq.FilterQuery, mq.Options)
+	cursor, err := r.DB.Collection(r.Collectioner(c)).Find(c, mq.FilterQuery, mq.Options)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) QueryOne(c context.Cont
 	}
 
 	var dto *DTO
-	err = r.DB.Collection(r.Collection).FindOne(c, mq.FilterQuery).Decode(&dto)
+	err = r.DB.Collection(r.Collectioner(c)).FindOne(c, mq.FilterQuery).Decode(&dto)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, types.ErrNotFound
@@ -179,7 +179,7 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Count(c context.Context
 		return 0, err
 	}
 
-	count, err := r.DB.Collection(r.Collection).CountDocuments(c, mq.FilterQuery)
+	count, err := r.DB.Collection(r.Collectioner(c)).CountDocuments(c, mq.FilterQuery)
 	return count, err
 }
 
@@ -206,7 +206,7 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Aggregate(
 		pipeline = append(pipeline, bson.D{{Key: "$sort", Value: mq.MongoQuery.Options.Sort}})
 	}
 
-	cursor, err := r.DB.Collection(r.Collection).Aggregate(c, pipeline)
+	cursor, err := r.DB.Collection(r.Collectioner(c)).Aggregate(c, pipeline)
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +230,7 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) CursorQuery(c context.C
 		return nil, nil, err
 	}
 
-	cursor, err := r.DB.Collection(r.Collection).Find(c, mq.FilterQuery, mq.Options)
+	cursor, err := r.DB.Collection(r.Collectioner(c)).Find(c, mq.FilterQuery, mq.Options)
 	if err != nil {
 		return nil, nil, err
 	}
