@@ -77,7 +77,7 @@ func (b *FilterQueryBuilder[Entity]) BuildQuery(query *types.PageQuery) (*MongoQ
 	}, nil
 }
 
-func (b *FilterQueryBuilder[Entity]) BuildAggregateQuery(aggregate *types.AggregateQuery, filter map[string]interface{}) (*MongoAggregateQuery, error) {
+func (b *FilterQueryBuilder[Entity]) BuildAggregateQuery(aggregate *types.AggregateQuery, filter map[string]any) (*MongoAggregateQuery, error) {
 	filterQuery, err := b.buildFilterQuery(filter)
 	if err != nil {
 		return nil, err
@@ -151,7 +151,7 @@ func (b *FilterQueryBuilder[Entity]) setPaginationOptions(pagination map[string]
 	}
 }
 
-func (b *FilterQueryBuilder[Entity]) buildFilterQuery(filter map[string]interface{}) (bson.M, error) {
+func (b *FilterQueryBuilder[Entity]) buildFilterQuery(filter map[string]any) (bson.M, error) {
 	if filter == nil {
 		return bson.M{}, nil
 	}
@@ -340,7 +340,7 @@ func (b *FilterQueryBuilder[Entity]) buildCursorFilter(query *types.CursorQuery)
 		}
 
 		fields := make([]string, len(cursor.Value))
-		values := make([]interface{}, len(cursor.Value))
+		values := make([]any, len(cursor.Value))
 
 		for i, value := range cursor.Value {
 			// val := 1

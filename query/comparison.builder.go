@@ -53,7 +53,7 @@ func NewComparisonBuilder[Entity any](
 func (b *ComparisonBuilder[Entity]) build(
 	field string,
 	cmp types.FilterComparisonOperators,
-	val interface{},
+	val any,
 ) (bson.M, error) {
 	schemaKey := field // TODO 根据字段名 获取 数据库的字段名
 
@@ -103,22 +103,18 @@ func (b *ComparisonBuilder[Entity]) build(
 func (b *ComparisonBuilder[Entity]) betweenComparison(
 	cmp string,
 	field string,
-	val interface{},
+	val any,
 ) (bson.M, error) {
 	if !b.isBetweenVal(val) {
-		return nil, errors.New(fmt.Sprintf("Invalid value for %v expected {lower: val, upper: val} got %v", val));
+		return nil, errors.New(fmt.Sprintf("Invalid value for %v expected {lower: val, upper: val} got %v", field, val))
 	}
 
-	_val, ok := val.(map[string]interface{})
+	_val, ok := val.(map[string]any)
 	if !ok {
 		return nil, errors.New("Invalid value, value must be a map");	
 	}
 
 	if cmp == "notbetween" {
-		if !ok {
-			return nil, errors.New("val not type of map[string]interface{}")
-		}
-
 		lt, err := b.convertQueryValue(field, _val["lower"])
 		if err != nil {
 			return nil, err
@@ -153,13 +149,13 @@ func (b *ComparisonBuilder[Entity]) betweenComparison(
 }
 
 func (b *ComparisonBuilder[Entity]) isBetweenVal(
-	val interface{},
+	val any,
 ) bool {
 	if val == nil {
 		return false
 	}
 
-	m, ok := val.(map[string]interface{})
+	m, ok := val.(map[string]any)
 	if !ok {
 		return false
 	}
@@ -178,19 +174,19 @@ func (b *ComparisonBuilder[Entity]) isBetweenVal(
 /*
 func (b *ComparisonBuilder) likeComparison(
 	cmp string,
-	val interface{},
-) *bson.M {
+	val any,
+) bson.M {
 	regExpStr := escapeRegExp(val).replace(/%/g, '.*');
 	regExp := RegExp(regExpStr, cmp.includes("ilike") ? "i" : nil);
 	
 	if cmp.startsWith("not") {
 		return &bson.M{ "$not": bson.M{ "$regex": regExp } };
 	}
-	return &bson.M{ "$regex": regExp };
+	return bson.M{ "$regex": regExp };
 }
 */
 
-func (b *ComparisonBuilder[Entity]) convertQueryValue(field string, val interface{}) (any, error) {
+func (b *ComparisonBuilder[Entity]) convertQueryValue(field string, val any) (any, error) {
 	if field == "_id" || field == "id"  {
 		return b.convertToObjectId(val)
 	}
@@ -231,7 +227,7 @@ func (b *ComparisonBuilder[Entity]) convertQueryValue(field string, val interfac
 					bitSize = 64
 				}
 
-				var pv interface{}
+				var pv any
 				if bsonType == "decimal" || bsonType == "double" {
 					v, _ := strconv.ParseFloat(sv, bitSize)
 					pv = v
@@ -258,9 +254,9 @@ func (b *ComparisonBuilder[Entity]) convertQueryValue(field string, val interfac
 	return val, nil
 }
 
-func (b *ComparisonBuilder[Entity]) convertToObjectId(val interface{}) (any, error) {
+func (b *ComparisonBuilder[Entity]) convertToObjectId(val any) (any, error) {
 	if objIDs, ok := val.([]string); ok {
-		var r []interface{}
+		var r []any
 		for _, v := range objIDs {
 			id, err := b.convertToObjectId(v)
 			if err != nil {

@@ -4,7 +4,7 @@ import (
 	"reflect"
 )
 
-func IsArray(a interface{}) bool {
+func IsArray(a any) bool {
 	rt := reflect.TypeOf(a)
 	if rt == nil {
 		return false

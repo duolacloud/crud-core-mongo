@@ -148,7 +148,7 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Query(c context.Context
 	return dtos, nil
 }
 
-func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) QueryOne(c context.Context, filter map[string]interface{}) (*DTO, error) {
+func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) QueryOne(c context.Context, filter map[string]any) (*DTO, error) {
 	filterQueryBuilder := query.NewFilterQueryBuilder[DTO](r.Schema, r.Options.StrictValidation)
 
 	mq, err := filterQueryBuilder.BuildQuery(&types.PageQuery{
@@ -185,7 +185,7 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Count(c context.Context
 
 func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Aggregate(
 	c context.Context,
-	filter map[string]interface{},
+	filter map[string]any,
 	aggregateQuery *types.AggregateQuery,
 ) ([]*types.AggregateResponse, error) {
 	filterQueryBuilder := query.NewFilterQueryBuilder[DTO](r.Schema, r.Options.StrictValidation)
@@ -266,7 +266,7 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) CursorQuery(c context.C
 		}*/
 
 		
-		sortFieldValues := make([]interface{}, len(q.Sort))
+		sortFieldValues := make([]any, len(q.Sort))
 		for i, sortField := range q.Sort {
 			if sortField[0:1] == "-" {
 				sortField = sortField[1:]

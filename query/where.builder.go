@@ -16,14 +16,14 @@ func NewWhereBuilder[Entity any](schema *mongo_schema.Schema) *WhereBuilder[Enti
 	}
 }
 
-func(b *WhereBuilder[Entity]) build(filter map[string]interface{}) (bson.M, error) {
+func(b *WhereBuilder[Entity]) build(filter map[string]any) (bson.M, error) {
 	var ands []bson.M
 	var ors []bson.M
 	filterQuery := bson.M{}
 
 	
 	if and, ok := filter["and"]; ok {
-		if andArr, ok := and.([]map[string]interface{}); ok {
+		if andArr, ok := and.([]map[string]any); ok {
 			for _, f := range andArr {
 				o, err := b.build(f)
 				if err != nil {
@@ -35,7 +35,7 @@ func(b *WhereBuilder[Entity]) build(filter map[string]interface{}) (bson.M, erro
 	}
 
 	if or, ok := filter["or"]; ok {
-		if orMap, ok := or.([]map[string]interface{}); ok {
+		if orMap, ok := or.([]map[string]any); ok {
 			for _, f := range orMap {
 				o, err := b.build(f)
 				if err != nil {
@@ -66,14 +66,14 @@ func(b *WhereBuilder[Entity]) build(filter map[string]interface{}) (bson.M, erro
 	return filterQuery, nil
 }
 
-func(b *WhereBuilder[Entity]) filterFields(filter map[string]interface{}) (bson.M, error) {
+func(b *WhereBuilder[Entity]) filterFields(filter map[string]any) (bson.M, error) {
 	var ands []bson.M
 	for field, cmp := range filter {
 		if field == "and" || field == "or" {
 			continue
 		}
 
-		and, err := b.withFilterComparison(field, cmp.(map[string]interface{}))
+		and, err := b.withFilterComparison(field, cmp.(map[string]any))
 		if err != nil {
 			return nil, err
 		}
@@ -94,7 +94,7 @@ func(b *WhereBuilder[Entity]) filterFields(filter map[string]interface{}) (bson.
 
 func(b *WhereBuilder[Entity]) withFilterComparison(
 	field string,
-	cmp map[string]interface{},
+	cmp map[string]any,
 ) (bson.M, error) {
 	var opts []types.FilterComparisonOperators
 	for key, _ := range cmp {

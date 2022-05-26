@@ -70,7 +70,7 @@ func (b *AggregateBuilder) createAggSelect(fn AggregateFunc, fields []string) bs
 		return bson.M{}
 	}
 
-	agg := make(map[string]interface{})
+	agg := make(map[string]any)
 
 	for _, field := range fields {
 		aggAlias := fmt.Sprintf("%s_%s", fn, field)
