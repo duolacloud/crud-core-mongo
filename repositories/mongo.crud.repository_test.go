@@ -10,18 +10,19 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/bson"
 	"github.com/duolacloud/crud-core/types"
+	"github.com/stretchr/testify/assert"
 )
 
 type UserEntity struct {
 	ID string `bson:"_id"`
 	Name string `bson:"name"`
 	Country string `bson:"country"`
-	Age int64 `bson:"age"`
+	Age int `bson:"age"`
 	Birthday time.Time `bson:"birthday"`
 }
 
 func (u *UserEntity) BeforeCreate() {
-	fmt.Printf("UserEntity.BeforeCreate")
+	fmt.Printf("UserEntity.BeforeCreate\n")
 }
 
 var userSchema = bson.M{
@@ -53,7 +54,8 @@ var userSchema = bson.M{
 	},
 }
 
-func TestMongoCrudRepository(t *testing.T) {
+
+func SetupDB() *mongo.Database {
 	option := options.Client().ApplyURI("mongodb://localhost:27017")
 	option.SetAuth(options.Credential{
 		Username:"root",
@@ -62,16 +64,59 @@ func TestMongoCrudRepository(t *testing.T) {
 
 	client, err := mongo.Connect(context.TODO(), option)
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
 
 	err = client.Ping(context.TODO(), nil)
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
 	
-	t.Log("connect mongo success")
 	db := client.Database("test")
+	return db
+}
+
+func TestCreateMany(t *testing.T) {
+	db := SetupDB()
+
+	r := NewMongoCrudRepository[UserEntity, UserEntity, map[string]any](
+		db, 
+		func(c context.Context) string {
+			return "users"
+		},
+		userSchema,
+	)
+	
+	c := context.TODO()
+	
+	for i := 1; i <= 5; i++ {
+		_ = r.Delete(c, fmt.Sprintf("%v", i))
+	}
+	
+	birthday, _ := time.Parse("2006-01-02 15:04:05", "1989-03-02 12:00:01")
+	t.Logf("birthday: %s\n", birthday)
+
+	var users []*UserEntity
+	for i := 1; i <= 5; i++ {
+		userID := fmt.Sprintf("%v", i)
+		users = append(users, &UserEntity{
+			ID: userID,
+			Name: fmt.Sprintf("用户%v", i),
+			Country: "china",
+			Age: 18 + i,
+			Birthday: birthday, 
+		})
+	}
+
+	createdUsers, err := r.CreateMany(c, users, types.WithCreateBatchSize(3))
+	assert.NoError(t, err)
+	for _, u := range createdUsers {
+		t.Logf("批量创建用户: %v\n", u)
+	}
+}
+
+func TestMongoCrudRepository(t *testing.T) {
+	db := SetupDB()
 
 	s := NewMongoCrudRepository[UserEntity, UserEntity, UserEntity](
 		db, 
@@ -82,7 +127,7 @@ func TestMongoCrudRepository(t *testing.T) {
 		WithStrictValidation(true),
 	)
 
-	err = s.Delete(context.TODO(), "1")
+	err := s.Delete(context.TODO(), "1")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -19,10 +19,10 @@ const (
 	AggregateFuncMIN   AggregateFunc = "min"
 )
 
+var AGG_REGEXP = regexp.MustCompile("(avg|sum|count|max|min|group_by)_(.*)")
+
 type AggregateBuilder struct {
 }
-
-var AGG_REGEXP = regexp.MustCompile("(avg|sum|count|max|min|group_by)_(.*)")
 
 func NewAggregateBuilder() *AggregateBuilder {
 	return &AggregateBuilder{}

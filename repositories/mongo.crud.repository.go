@@ -65,6 +65,52 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Create(c context.Contex
 	return r.Get(c, res.InsertedID)
 }
 
+func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) CreateMany(c context.Context, items []*CreateDTO, opts ...types.CreateManyOption) ([]*DTO, error) {
+	_items := make([]interface{}, len(items))
+	
+	for i, item := range items {
+		if hook, ok := any(item).(BeforeCreateHook); ok {
+			hook.BeforeCreate()
+		}
+
+		_items[i] = item
+	}
+
+	res, err := r.DB.Collection(r.Collectioner(c)).InsertMany(c, _items)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := bson.M{
+		"_id": bson.M{
+			"$in": res.InsertedIDs,
+		},
+	}
+
+	var dtos []*DTO
+
+	cursor, err := r.DB.Collection(r.Collectioner(c)).Find(c, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(c, &dtos)
+	if err != nil {
+		return nil, err
+	}
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, types.ErrNotFound
+		}
+
+		return nil, err
+	}
+
+
+	return dtos, nil
+}
+
 func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Delete(c context.Context, id types.ID) error {
 	_, err := r.DB.Collection(r.Collectioner(c)).DeleteOne(c, bson.M{"_id": id})
 	return err
