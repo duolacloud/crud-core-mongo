@@ -76,7 +76,6 @@ func SetupDB() *mongo.Database {
 	return db
 }
 
-
 func TestMongoCrudRepository(t *testing.T) {
 	db := SetupDB()
 
