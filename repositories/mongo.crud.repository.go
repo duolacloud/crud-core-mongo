@@ -121,8 +121,6 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Update(c context.Contex
 		hook.BeforeUpdate()
 	}
 
-	var dto *DTO
-
 	var _opts types.UpdateOptions
 	for _, o := range opts {
 		o(&_opts)
@@ -146,12 +144,13 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Update(c context.Contex
 	filter := bson.D{{"_id", id}}
 	update := bson.D{{"$set", mmap}}
 
+	var dto *DTO
 	err = r.DB.Collection(r.Collectioner(c)).FindOneAndUpdate(c, filter, update, &mongo_opts).Decode(&dto)
 	if err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	return dto, nil
 }
 
 func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Get(c context.Context, id types.ID) (*DTO, error) {

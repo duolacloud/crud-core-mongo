@@ -118,12 +118,12 @@ func TestMongoCrudRepository(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Logf("修改后: %v", u)
 
 	u, err = s.Get(context.TODO(), "1")
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("修改后: %v", u)
 
 	query := &types.PageQuery{
 		Fields: []string{
@@ -156,7 +156,7 @@ func TestMongoCrudRepository(t *testing.T) {
 	{
 		u, err := s.QueryOne(context.TODO(), map[string]any{
 			"name": map[string]any{
-				"eq": "李四1",
+				"eq": "李四",
 			},
 		})
 		if err != nil && err != types.ErrNotFound {
