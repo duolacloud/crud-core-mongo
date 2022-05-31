@@ -76,49 +76,11 @@ func SetupDB() *mongo.Database {
 	return db
 }
 
-func TestCreateMany(t *testing.T) {
-	db := SetupDB()
-
-	r := NewMongoCrudRepository[UserEntity, UserEntity, map[string]any](
-		db, 
-		func(c context.Context) string {
-			return "users"
-		},
-		userSchema,
-	)
-	
-	c := context.TODO()
-	
-	for i := 1; i <= 5; i++ {
-		_ = r.Delete(c, fmt.Sprintf("%v", i))
-	}
-	
-	birthday, _ := time.Parse("2006-01-02 15:04:05", "1989-03-02 12:00:01")
-	t.Logf("birthday: %s\n", birthday)
-
-	var users []*UserEntity
-	for i := 1; i <= 5; i++ {
-		userID := fmt.Sprintf("%v", i)
-		users = append(users, &UserEntity{
-			ID: userID,
-			Name: fmt.Sprintf("用户%v", i),
-			Country: "china",
-			Age: 18 + i,
-			Birthday: birthday, 
-		})
-	}
-
-	createdUsers, err := r.CreateMany(c, users, types.WithCreateBatchSize(3))
-	assert.NoError(t, err)
-	for _, u := range createdUsers {
-		t.Logf("批量创建用户: %v\n", u)
-	}
-}
 
 func TestMongoCrudRepository(t *testing.T) {
 	db := SetupDB()
 
-	s := NewMongoCrudRepository[UserEntity, UserEntity, UserEntity](
+	s := NewMongoCrudRepository[UserEntity, UserEntity, map[string]any](
 		db, 
 		func (c context.Context) string {
 			return "users"
@@ -149,11 +111,10 @@ func TestMongoCrudRepository(t *testing.T) {
 
 	t.Logf("create: %v\n", u)
 
-	u, err = s.Update(context.TODO(), "1", &UserEntity{
-		Name: "李四",
-		Age: 19,
-		Country: "china",
-		Birthday: birthday,
+	u, err = s.Update(context.TODO(), "1", &map[string]any{
+		"name": "李四",
+		"age": 19,
+		"country": "china",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -262,5 +223,44 @@ func TestMongoCrudRepository(t *testing.T) {
 		}
 
 		t.Logf("聚合: %v\n", string(js))
+	}
+}
+
+func TestCreateMany(t *testing.T) {
+	db := SetupDB()
+
+	r := NewMongoCrudRepository[UserEntity, UserEntity, map[string]any](
+		db, 
+		func(c context.Context) string {
+			return "users"
+		},
+		userSchema,
+	)
+	
+	c := context.TODO()
+	
+	for i := 1; i <= 5; i++ {
+		_ = r.Delete(c, fmt.Sprintf("%v", i))
+	}
+	
+	birthday, _ := time.Parse("2006-01-02 15:04:05", "1989-03-02 12:00:01")
+	t.Logf("birthday: %s\n", birthday)
+
+	var users []*UserEntity
+	for i := 1; i <= 5; i++ {
+		userID := fmt.Sprintf("%v", i)
+		users = append(users, &UserEntity{
+			ID: userID,
+			Name: fmt.Sprintf("用户%v", i),
+			Country: "china",
+			Age: 18 + i,
+			Birthday: birthday, 
+		})
+	}
+
+	createdUsers, err := r.CreateMany(c, users, types.WithCreateBatchSize(3))
+	assert.NoError(t, err)
+	for _, u := range createdUsers {
+		t.Logf("批量创建用户: %v\n", u)
 	}
 }

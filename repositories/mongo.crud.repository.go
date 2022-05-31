@@ -128,9 +128,9 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Update(c context.Contex
 		o(&_opts)
 	}
 
-	mongo_opts := options.FindOneAndUpdateOptions{
-		Upsert: &_opts.Upsert,
-	}
+	mongo_opts := options.FindOneAndUpdateOptions{}
+	mongo_opts.SetUpsert(_opts.Upsert)
+	mongo_opts.SetReturnDocument(options.After)
 
 	data, err := bson.Marshal(updateDTO)
 	if err != nil {
