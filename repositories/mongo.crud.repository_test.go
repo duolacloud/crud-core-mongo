@@ -79,6 +79,8 @@ func SetupDB() *mongo.Database {
 func TestMongoCrudRepository(t *testing.T) {
 	db := SetupDB()
 
+	c := context.TODO()
+
 	s := NewMongoCrudRepository[UserEntity, UserEntity, map[string]any](
 		db, 
 		func (c context.Context) string {
@@ -88,7 +90,7 @@ func TestMongoCrudRepository(t *testing.T) {
 		WithStrictValidation(true),
 	)
 
-	err := s.Delete(context.TODO(), "1")
+	err := s.Delete(c, "1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -96,7 +98,7 @@ func TestMongoCrudRepository(t *testing.T) {
 	birthday, _ := time.Parse("2006-01-02 15:04:05", "1989-03-02 12:00:01")
 	t.Logf("birthday: %s\n", birthday)
 
-	u, err := s.Create(context.TODO(), &UserEntity{
+	u, err := s.Create(c, &UserEntity{
 		ID: "1",
 		Name: "张三",
 		Country: "china",
@@ -110,7 +112,7 @@ func TestMongoCrudRepository(t *testing.T) {
 
 	t.Logf("create: %v\n", u)
 
-	u, err = s.Update(context.TODO(), "1", &map[string]any{
+	u, err = s.Update(c, "1", &map[string]any{
 		"name": "李四",
 		"age": 19,
 		"country": "china",
@@ -120,7 +122,7 @@ func TestMongoCrudRepository(t *testing.T) {
 	}
 	t.Logf("修改后: %v", u)
 
-	u, err = s.Get(context.TODO(), "1")
+	u, err = s.Get(c, "1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,7 +156,7 @@ func TestMongoCrudRepository(t *testing.T) {
 	}
 
 	{
-		u, err := s.QueryOne(context.TODO(), map[string]any{
+		u, err := s.QueryOne(c, map[string]any{
 			"name": map[string]any{
 				"eq": "李四",
 			},
@@ -166,7 +168,7 @@ func TestMongoCrudRepository(t *testing.T) {
 		t.Logf("queryOne: %v\n", u)
 	}
 	
-	us, err := s.Query(context.TODO(), query)
+	us, err := s.Query(c, query)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,14 +178,14 @@ func TestMongoCrudRepository(t *testing.T) {
 	}
 
 
-	count, err := s.Count(context.TODO(), query)
+	count, err := s.Count(c, query)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	t.Logf("记录总数: %v\n", count)
 
-	c, extra, err := s.CursorQuery(context.TODO(), &types.CursorQuery{
+	users, extra, err := s.CursorQuery(c, &types.CursorQuery{
 		// Cursor: "gaF2kaEx",
 		Limit: 1,
 	})
@@ -192,7 +194,7 @@ func TestMongoCrudRepository(t *testing.T) {
 	}
 
 	{
-		js, _ := json.Marshal(c)
+		js, _ := json.Marshal(users)
 		extraJs, _ := json.Marshal(extra)
 		t.Logf("CursorList: %v, %v\n", string(js), string(extraJs))
 	}
