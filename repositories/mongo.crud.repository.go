@@ -1,13 +1,14 @@
 package repositories
 
 import (
-	"fmt"
 	"bytes"
-	// "errors"
 	"context"
-	"github.com/duolacloud/crud-core/types"
+	"errors"
+	"fmt"
+
 	"github.com/duolacloud/crud-core-mongo/query"
 	mongo_schema "github.com/duolacloud/crud-core-mongo/schema"
+	"github.com/duolacloud/crud-core/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -17,7 +18,7 @@ type MongoCrudRepositoryOptions struct {
 	StrictValidation bool
 }
 
-type MongoCrudRepositoryOption func (*MongoCrudRepositoryOptions)
+type MongoCrudRepositoryOption func(*MongoCrudRepositoryOptions)
 
 func WithStrictValidation(v bool) MongoCrudRepositoryOption {
 	return func(o *MongoCrudRepositoryOptions) {
@@ -26,10 +27,10 @@ func WithStrictValidation(v bool) MongoCrudRepositoryOption {
 }
 
 type MongoCrudRepository[DTO any, CreateDTO any, UpdateDTO any] struct {
-	DB *mongo.Database
+	DB           *mongo.Database
 	Collectioner mongo_schema.Collectioner
-	Schema *mongo_schema.Schema
-	Options *MongoCrudRepositoryOptions
+	Schema       *mongo_schema.Schema
+	Options      *MongoCrudRepositoryOptions
 }
 
 func NewMongoCrudRepository[DTO any, CreateDTO any, UpdateDTO any](
@@ -39,9 +40,9 @@ func NewMongoCrudRepository[DTO any, CreateDTO any, UpdateDTO any](
 	opts ...MongoCrudRepositoryOption,
 ) *MongoCrudRepository[DTO, CreateDTO, UpdateDTO] {
 	r := &MongoCrudRepository[DTO, CreateDTO, UpdateDTO]{
-		DB: db,
+		DB:           db,
 		Collectioner: collectioner,
-		Schema: mongo_schema.NewSchema(schema),
+		Schema:       mongo_schema.NewSchema(schema),
 	}
 
 	r.Options = &MongoCrudRepositoryOptions{}
@@ -56,29 +57,25 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Create(c context.Contex
 	if hook, ok := any(createDTO).(BeforeCreateHook); ok {
 		hook.BeforeCreate()
 	}
-
 	res, err := r.DB.Collection(r.Collectioner(c)).InsertOne(c, createDTO)
 	if err != nil {
-		return nil, err
+		return nil, wrapMongoError(err)
 	}
-
 	return r.Get(c, res.InsertedID)
 }
 
 func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) CreateMany(c context.Context, items []*CreateDTO, opts ...types.CreateManyOption) ([]*DTO, error) {
 	_items := make([]interface{}, len(items))
-	
 	for i, item := range items {
 		if hook, ok := any(item).(BeforeCreateHook); ok {
 			hook.BeforeCreate()
 		}
-
 		_items[i] = item
 	}
 
 	res, err := r.DB.Collection(r.Collectioner(c)).InsertMany(c, _items)
 	if err != nil {
-		return nil, err
+		return nil, wrapMongoError(err)
 	}
 
 	filter := bson.M{
@@ -88,32 +85,21 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) CreateMany(c context.Co
 	}
 
 	var dtos []*DTO
-
 	cursor, err := r.DB.Collection(r.Collectioner(c)).Find(c, filter)
 	if err != nil {
-		return nil, err
+		return nil, wrapMongoError(err)
 	}
 
 	err = cursor.All(c, &dtos)
 	if err != nil {
-		return nil, err
+		return nil, wrapMongoError(err)
 	}
-
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, types.ErrNotFound
-		}
-
-		return nil, err
-	}
-
-
 	return dtos, nil
 }
 
 func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Delete(c context.Context, id types.ID) error {
 	_, err := r.DB.Collection(r.Collectioner(c)).DeleteOne(c, bson.M{"_id": id})
-	return err
+	return wrapMongoError(err)
 }
 
 func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Update(c context.Context, id types.ID, updateDTO *UpdateDTO, opts ...types.UpdateOption) (*DTO, error) {
@@ -147,47 +133,39 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Update(c context.Contex
 	var dto *DTO
 	err = r.DB.Collection(r.Collectioner(c)).FindOneAndUpdate(c, filter, update, &mongo_opts).Decode(&dto)
 	if err != nil {
-		return nil, err
+		return nil, wrapMongoError(err)
 	}
-
 	return dto, nil
 }
 
 func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Get(c context.Context, id types.ID) (*DTO, error) {
 	var dto *DTO
-
 	filter := bson.D{{"_id", id}}
-
 	err := r.DB.Collection(r.Collectioner(c)).FindOne(c, filter).Decode(&dto)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, types.ErrNotFound
-		}
-
-		return nil, err
+		return nil, wrapMongoError(err)
 	}
-
 	return dto, nil
 }
 
 func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Query(c context.Context, q *types.PageQuery) ([]*DTO, error) {
 	filterQueryBuilder := query.NewFilterQueryBuilder[DTO](r.Schema, r.Options.StrictValidation)
 
-	mq, err := filterQueryBuilder.BuildQuery(q);
+	mq, err := filterQueryBuilder.BuildQuery(q)
 	if err != nil {
 		return nil, err
 	}
 
 	cursor, err := r.DB.Collection(r.Collectioner(c)).Find(c, mq.FilterQuery, mq.Options)
 	if err != nil {
-		return nil, err
+		return nil, wrapMongoError(err)
 	}
 
 	var dtos []*DTO
 
 	err = cursor.All(c, &dtos)
 	if err != nil {
-		return nil, err
+		return nil, wrapMongoError(err)
 	}
 
 	return dtos, nil
@@ -196,9 +174,7 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Query(c context.Context
 func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) QueryOne(c context.Context, filter map[string]any) (*DTO, error) {
 	filterQueryBuilder := query.NewFilterQueryBuilder[DTO](r.Schema, r.Options.StrictValidation)
 
-	mq, err := filterQueryBuilder.BuildQuery(&types.PageQuery{
-		Filter: filter,
-	});
+	mq, err := filterQueryBuilder.BuildQuery(&types.PageQuery{Filter: filter})
 	if err != nil {
 		return nil, err
 	}
@@ -206,26 +182,21 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) QueryOne(c context.Cont
 	var dto *DTO
 	err = r.DB.Collection(r.Collectioner(c)).FindOne(c, mq.FilterQuery).Decode(&dto)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, types.ErrNotFound
-		}
-
-		return nil, err
+		return nil, wrapMongoError(err)
 	}
-
 	return dto, nil
 }
 
 func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Count(c context.Context, q *types.PageQuery) (int64, error) {
 	filterQueryBuilder := query.NewFilterQueryBuilder[DTO](r.Schema, r.Options.StrictValidation)
 
-	mq, err := filterQueryBuilder.BuildQuery(q);
+	mq, err := filterQueryBuilder.BuildQuery(q)
 	if err != nil {
 		return 0, err
 	}
 
 	count, err := r.DB.Collection(r.Collectioner(c)).CountDocuments(c, mq.FilterQuery)
-	return count, err
+	return count, wrapMongoError(err)
 }
 
 func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Aggregate(
@@ -239,7 +210,7 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Aggregate(
 	if err != nil {
 		return nil, err
 	}
-	
+
 	pipeline := mongo.Pipeline{
 		{{Key: "$match", Value: mq.FilterQuery}},
 		{{Key: "$group", Value: mq.Aggregate}},
@@ -253,17 +224,16 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) Aggregate(
 
 	cursor, err := r.DB.Collection(r.Collectioner(c)).Aggregate(c, pipeline)
 	if err != nil {
-		return nil, err
+		return nil, wrapMongoError(err)
 	}
-	
+
 	var result []bson.M
 	err = cursor.All(c, &result)
 	if err != nil {
-		return nil, err
+		return nil, wrapMongoError(err)
 	}
 
-	fmt.Printf("r: %v\n", result)
-
+	// fmt.Printf("r: %v\n", result)
 	return query.ConvertToAggregateResponse(result)
 }
 
@@ -277,14 +247,14 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) CursorQuery(c context.C
 
 	cursor, err := r.DB.Collection(r.Collectioner(c)).Find(c, mq.FilterQuery, mq.Options)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, wrapMongoError(err)
 	}
 
 	var result []*DTO
 
 	err = cursor.All(c, &result)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, wrapMongoError(err)
 	}
 
 	extra := &types.CursorExtra{}
@@ -293,30 +263,29 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) CursorQuery(c context.C
 		return nil, extra, nil
 	}
 
-	if len(result) == int(q.Limit + 1) {
+	if len(result) == int(q.Limit+1) {
 		extra.HasNext = true
 		extra.HasPrevious = true
 
-		result = result[0:len(result)-1]
+		result = result[0 : len(result)-1]
 		fmt.Printf("len(result) == q.Limit itemCount: %d, limit: %d\n", len(result), q.Limit)
 	}
 	fmt.Printf("fuck itemCount: %d\n", len(result))
 
 	toCursor := func(item *DTO) (string, error) {
 		/*
-		// 反射DTO类型
-		t := reflect.TypeOf(item)
-		if t.Kind() == reflect.Ptr {
-			t = t.Elem()
-		}*/
+			// 反射DTO类型
+			t := reflect.TypeOf(item)
+			if t.Kind() == reflect.Ptr {
+				t = t.Elem()
+			}*/
 
-		
 		sortFieldValues := make([]any, len(q.Sort))
 		for i, sortField := range q.Sort {
 			if sortField[0:1] == "-" {
 				sortField = sortField[1:]
 			}
-	
+
 			if sortField[0:1] == "+" {
 				sortField = sortField[1:]
 			}
@@ -326,10 +295,10 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) CursorQuery(c context.C
 			}
 
 			/*
-			_, ok := r.Schema.FieldTypes[sortField]
-			if !ok {
-				return "", errors.New(fmt.Sprintf("field %s not found", sortField))
-			}
+				_, ok := r.Schema.FieldTypes[sortField]
+				if !ok {
+					return "", errors.New(fmt.Sprintf("field %s not found", sortField))
+				}
 			*/
 			var m bson.M
 			bytes, _ := bson.Marshal(item)
@@ -363,4 +332,13 @@ func (r *MongoCrudRepository[DTO, CreateDTO, UpdateDTO]) CursorQuery(c context.C
 	}
 
 	return result, extra, nil
+}
+
+func wrapMongoError(err error) error {
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return types.ErrNotFound
+		}
+	}
+	return err
 }
