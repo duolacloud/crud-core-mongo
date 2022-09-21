@@ -1,8 +1,8 @@
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/duolacloud/crud-core v0.0.3 h1:WxVzE3P4ByhH1+L63KyinfKwwQN6J3U8ys/+9DsYCxI=
-github.com/duolacloud/crud-core v0.0.3/go.mod h1:ccLZ2Lt/psGqBxN0stZ6vpdwshq7tEUE0Z+8cpM5oBc=
+github.com/duolacloud/crud-core v0.0.4 h1:0LqEAG/DIpu79kLxSpQmNHd96RTiY7s4ZxVrgwfqXfg=
+github.com/duolacloud/crud-core v0.0.4/go.mod h1:ccLZ2Lt/psGqBxN0stZ6vpdwshq7tEUE0Z+8cpM5oBc=
 github.com/go-stack/stack v1.8.0 h1:5SgMzNM5HxrEjV0ww2lTmX6E2Izsfxas4+YHWRs3Lsk=
 github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
 github.com/golang/snappy v0.0.1 h1:Qgr9rKW7uDUkrbSmQeiDsGa8SjGyCOGtuasMWwvp2P4=

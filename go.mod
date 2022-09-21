@@ -3,7 +3,7 @@ module github.com/duolacloud/crud-core-mongo
 go 1.18
 
 require (
-	github.com/duolacloud/crud-core v0.0.3
+	github.com/duolacloud/crud-core v0.0.4
 	github.com/stretchr/testify v1.7.1
 	go.mongodb.org/mongo-driver v1.9.1
 )
